@@ -515,19 +515,33 @@ class SubprocSpec:
 
     @property
     def stderr(self):
-        return self._stderr
+        return self._stderr if not builtins.__xonsh__.env.get("MERGE_STDERR") else self._stdout
 
     @stderr.setter
     def stderr(self, value):
-        if self._stderr is None:
-            self._stderr = value
-        elif value is None:
-            pass
+        isout = builtins.__xonsh__.env.get("MERGE_STDERR")
+        multi_redir = False
+        if isout:
+            if self._stdout is None:
+                self._stdout = value
+            elif value is None:
+                pass
+            else:
+                multi_redir = True
         else:
+            if self._stderr is None:
+                self._stderr = value
+            elif value is None:
+                pass
+            else:
+                multi_redir = True
+        if multi_redir:
             safe_close(value)
             msg = "Multiple redirections for stderr for {0!r}"
             msg = msg.format(" ".join(self.args))
             raise XonshError(msg)
+
+
 
     #
     # Execution methods
